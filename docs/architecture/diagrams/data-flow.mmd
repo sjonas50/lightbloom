@@ -1,0 +1,63 @@
+%% Lightbloom -- Data Flow Diagram
+%% Render with: https://mermaid.live or any Mermaid-compatible tool
+
+sequenceDiagram
+    actor User
+    participant Form as Birth Data Form
+    participant Geo as /api/geocode
+    participant Calc as /api/calculate
+    participant HD as /api/hd-calculate
+    participant Read as /api/reading
+    participant Sweph as Swiss Ephemeris<br/>(sweph)
+    participant AI as Claude Opus 4.5
+    participant Web as Web Search<br/>(tool_use)
+
+    User->>Form: Enter birth date, time, location
+
+    Note over Form,Geo: Step 1: Geocoding
+    Form->>Geo: POST { location: "Portland, OR" }
+    Geo-->>Form: { lat: 45.52, lng: -122.68, tz: "America/Los_Angeles" }
+
+    Note over Form,Sweph: Step 2: Parallel Calculations
+    par Natal + Transit Calculation
+        Form->>Calc: POST { birthDate, birthTime, lat, lng, tz }
+        Calc->>Sweph: calc_ut(julianDay, planet, flags)
+        Sweph-->>Calc: planetary longitudes
+        Calc->>Sweph: houses_ex2(julianDay, lat, lng, system)
+        Sweph-->>Calc: house cusps
+        Calc-->>Form: { planets[], houses[], aspects[], transits2026[] }
+    and Human Design Calculation
+        Form->>HD: POST { birthDate, birthTime, lat, lng, tz }
+        HD->>Sweph: calc_ut(personalityJD, planets)
+        Sweph-->>HD: personality positions
+        HD->>Sweph: calc_ut(designJD, planets) [~88 days before birth]
+        Sweph-->>HD: design positions
+        Note over HD: Map longitudes to I Ching gates<br/>Determine channels, centers, type
+        HD-->>Form: { type, authority, profile, centers[], channels[], gates[] }
+    end
+
+    Note over Form,User: Step 3: Render Charts
+    Form-->>User: Display natal wheel SVG
+    Form-->>User: Display bodygraph SVG
+
+    Note over Form,Web: Step 4: Stream AI Reading
+    Form->>Read: POST { chartData, readingType: "natal" }
+    Read->>AI: streamText({ system prompt, chart data, tools })
+
+    loop Streaming Response
+        AI-->>Read: content_block_delta (text chunk)
+        Read-->>Form: SSE: text delta
+        Form-->>User: Render text progressively
+    end
+
+    opt Tool Use (Web Search)
+        AI->>Web: tool_use: web_search({ query: "Saturn transit 2026" })
+        Web-->>AI: search results
+        AI-->>Read: content_block_delta (enriched text)
+        Read-->>Form: SSE: text delta
+        Form-->>User: Render enriched text
+    end
+
+    AI-->>Read: message_stop
+    Read-->>Form: SSE: done
+    Form-->>User: Reading complete

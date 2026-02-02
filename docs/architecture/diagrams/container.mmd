@@ -1,0 +1,64 @@
+%% Lightbloom -- C4 Container Diagram
+%% Render with: https://mermaid.live or any Mermaid-compatible tool
+
+graph TB
+    User["<b>User</b><br/>(Web Browser)"]
+
+    subgraph boundary["Lightbloom System Boundary (Vercel)"]
+        direction TB
+
+        subgraph client["Client-Side (Browser)"]
+            Pages["<b>Next.js Pages</b><br/>React Server Components<br/><i>Landing, About (SSR)</i>"]
+            BirthForm["<b>Birth Data Form</b><br/>React Client Component<br/><i>Date, time, location input</i>"]
+            AstroWheel["<b>Astrology Wheel</b><br/>React SVG Component<br/><i>Natal chart visualization</i>"]
+            Bodygraph["<b>HD Bodygraph</b><br/>React SVG Component<br/><i>9 centers, channels, gates</i>"]
+            StreamView["<b>Streaming Reader</b><br/>React Client Component<br/><i>Progressive AI text display</i>"]
+        end
+
+        subgraph server["Server-Side (Vercel Serverless Functions)"]
+            CalcRoute["/api/calculate<br/><b>Chart Calculation</b><br/><i>Natal + Transit positions</i>"]
+            HDRoute["/api/hd-calculate<br/><b>HD Calculation</b><br/><i>Type, Authority, Gates</i>"]
+            ReadRoute["/api/reading<br/><b>AI Reading</b><br/><i>Streaming SSE endpoint</i>"]
+            GeoRoute["/api/geocode<br/><b>Geocoding Proxy</b><br/><i>Location to coordinates</i>"]
+        end
+
+        subgraph libs["Core Libraries (Server-only)"]
+            Sweph["<b>sweph</b><br/>Swiss Ephemeris<br/><i>Native C add-on</i>"]
+            AstroLib["<b>Astrology Lib</b><br/>TypeScript<br/><i>Chart assembly, aspects</i>"]
+            HDLib["<b>Human Design Lib</b><br/>TypeScript<br/><i>Gates, channels, type calc</i>"]
+            AIService["<b>AI Service</b><br/>Vercel AI SDK v6<br/><i>Streaming + tool_use</i>"]
+        end
+    end
+
+    Claude["<b>Claude Opus 4.5</b><br/>Anthropic API"]
+    Geocode["<b>OpenCage API</b><br/>Geocoding"]
+
+    User --> Pages
+    User --> BirthForm
+    BirthForm --> GeoRoute
+    BirthForm --> CalcRoute
+    BirthForm --> HDRoute
+    AstroWheel -.->|"receives chart data"| CalcRoute
+    Bodygraph -.->|"receives HD data"| HDRoute
+    StreamView --> ReadRoute
+
+    CalcRoute --> Sweph
+    CalcRoute --> AstroLib
+    HDRoute --> Sweph
+    HDRoute --> HDLib
+    ReadRoute --> AIService
+
+    AIService -->|"streaming"| Claude
+    GeoRoute --> Geocode
+
+    classDef person fill:#08427b,stroke:#052e56,color:#fff
+    classDef container fill:#438dd5,stroke:#2e6295,color:#fff
+    classDef component fill:#85bbf0,stroke:#5d82a8,color:#000
+    classDef external fill:#999999,stroke:#6b6b6b,color:#fff
+    classDef boundary_style fill:none,stroke:#444,stroke-dasharray:5 5
+
+    class User person
+    class Pages,BirthForm,AstroWheel,Bodygraph,StreamView container
+    class CalcRoute,HDRoute,ReadRoute,GeoRoute container
+    class Sweph,AstroLib,HDLib,AIService component
+    class Claude,Geocode external

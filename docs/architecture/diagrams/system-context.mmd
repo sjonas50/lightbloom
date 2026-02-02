@@ -1,0 +1,26 @@
+%% Lightbloom -- C4 System Context Diagram
+%% Render with: https://mermaid.live or any Mermaid-compatible tool
+
+graph TB
+    User["<b>User</b><br/>(Web Browser)<br/><i>Enters birth data,<br/>views charts and readings</i>"]
+
+    Lightbloom["<b>Lightbloom</b><br/>Web Application<br/><i>Next.js on Vercel</i><br/><br/>Generates astrology charts,<br/>2026 transit readings, and<br/>Human Design reports"]
+
+    Claude["<b>Claude Opus 4.5</b><br/>Anthropic API<br/><i>Generates interpretive<br/>readings via streaming</i>"]
+
+    Geocoding["<b>Geocoding Service</b><br/>OpenCage API<br/><i>Converts location names<br/>to coordinates + timezone</i>"]
+
+    User -->|"1. Birth date, time, location"| Lightbloom
+    Lightbloom -->|"2. Charts, readings,<br/>bodygraph"| User
+    Lightbloom -->|"3. Streaming AI request<br/>with chart data + tools"| Claude
+    Claude -->|"4. Streamed interpretation<br/>text + tool calls"| Lightbloom
+    Lightbloom -->|"5. Location query"| Geocoding
+    Geocoding -->|"6. Lat/Long/Timezone"| Lightbloom
+
+    classDef person fill:#08427b,stroke:#052e56,color:#fff
+    classDef system fill:#1168bd,stroke:#0b4884,color:#fff
+    classDef external fill:#999999,stroke:#6b6b6b,color:#fff
+
+    class User person
+    class Lightbloom system
+    class Claude,Geocoding external
